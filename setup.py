@@ -29,7 +29,8 @@ setuptools.setup(
     scripts=[],
     author="Denis Kuznetsov",
     author_email="kuznetsov.den.p@gmail.com",
-    description="Statistics collection extension for Dialog Flow Framework (https://github.com/deepmipt/dialog_flow_framework).",
+    description="Statistics collection extension for Dialog Flow Framework "
+    "(https://github.com/deepmipt/dialog_flow_framework).",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="",
