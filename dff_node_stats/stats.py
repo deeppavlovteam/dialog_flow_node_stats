@@ -42,3 +42,17 @@ class Stats(BaseModel):
         history_ids = df.history_id[df.context_id == str(ctx.id)]
         ctx_df = ctx_df[~ctx_df.history_id.isin(history_ids)]
         pd.concat([df, ctx_df]).to_csv(self.csv_file, index=False)
+
+    @property
+    def dataframe(self):
+        return pd.read_csv(self.csv_file)
+
+    def streamlit_run(self):
+        import streamlit as st
+
+        st.title("Node Analytics")
+        st.dataframe(self.dataframe[["flow_label", "node_label"]])
+        # st.subheader('Node labels')
+        st.bar_chart(self.dataframe["node_label"].value_counts())
+        st.bar_chart(self.dataframe["node_label"])
+        # st.dataframe(self.dataframe)
