@@ -24,7 +24,7 @@ readme_file = LOCATION / "README.md"
 long_description = readme_file.open(encoding="utf8").read()
 
 setuptools.setup(
-    name="dff-node-stats",
+    name="dff_node_stats",
     version="0.1.0",
     scripts=[],
     author="Denis Kuznetsov",

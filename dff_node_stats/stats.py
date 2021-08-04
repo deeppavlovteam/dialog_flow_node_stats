@@ -13,12 +13,15 @@ class Stats(BaseModel):
     @validate_arguments
     def save(self, ctx: Context, *args, **kwargs):
         if not self.csv_file.exists():
-            pd.DataFrame({"history_id": [], "context_id": [], "flow_label": [], "node_label": []}).to_csv(self.csv_file)
+            pd.DataFrame({"history_id": [], "context_id": [], "flow_label": [], "node_label": []}).to_csv(
+                self.csv_file,
+                index=False,
+            )
         df = pd.read_csv(self.csv_file)
         df.history_id = df.history_id.astype(int)
         indexes, flow_labels, node_labels = list(
             zip(
-                [
+                *[
                     (
                         index,
                         flow_label,
@@ -38,4 +41,4 @@ class Stats(BaseModel):
         )
         history_ids = df.history_id[df.context_id == str(ctx.id)]
         ctx_df = ctx_df[~ctx_df.history_id.isin(history_ids)]
-        pd.concat([df, ctx_df]).to_csv(self.csv_file)
+        pd.concat([df, ctx_df]).to_csv(self.csv_file, index=False)

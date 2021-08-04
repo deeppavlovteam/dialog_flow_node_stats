@@ -2,6 +2,7 @@ from dff import GRAPH, RESPONSE, GLOBAL_TRANSITIONS
 from dff import Context, Actor
 from dff import repeat, previous, to_start, to_fallback, forward, back
 
+# from dff_node_stats import Stats
 import dff_node_stats
 
 
@@ -52,8 +53,10 @@ flows = {
     },
 }
 
-ctx = Context()
+ctx1 = Context()
+ctx2 = Context()
 actor = Actor(flows, start_node_label=("root", "start"), fallback_node_label=("root", "fallback"))
+stats = dff_node_stats.Stats(csv_file="examples/stat.csv")
 for in_text, out_text in [
     ("start", "s"),
     ("left", "l2"),
@@ -72,12 +75,11 @@ for in_text, out_text in [
     ("back", "f"),
     ("start", "s"),
 ]:
-    ctx.add_human_utterance(in_text)
-    ctx = actor(ctx)
-    if ctx.actor_text_response != out_text:
-        raise Exception(f" expected {out_text=} but got {ctx.actor_text_response=} for {in_text=}")
-
-
-stats = dff_node_stats.Stats(csv_file="stat.csv")
-stats.save(ctx)
-
+    ctx1.add_human_utterance(in_text)
+    ctx2.add_human_utterance(in_text)
+    ctx1 = actor(ctx1)
+    ctx1.clean(hold_last_n_indexes=4, fields=["labels"])
+    stats.save(ctx1)
+    ctx2 = actor(ctx2)
+    ctx2.clean(hold_last_n_indexes=4, fields=["labels"])
+    stats.save(ctx2)
