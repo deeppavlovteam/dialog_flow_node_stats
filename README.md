@@ -14,8 +14,9 @@ Examples:
 ```bash
 # collect stats
 python examples/collect_stats.py
-# run dashboard:
+# run dashboard
 python examples/dashboard.py
-# run api:
+# run api
 python examples/api.py
+# now you can follow to swagger by http://localhost:8000/docs
 ```
