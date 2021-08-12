@@ -57,6 +57,7 @@ ctx1 = Context()
 ctx2 = Context()
 actor = Actor(flows, start_node_label=("root", "start"), fallback_node_label=("root", "fallback"))
 stats = dff_node_stats.Stats(csv_file="examples/stat.csv")
+stats.update_actor(actor, auto_save=False)
 for in_text, out_text in [
     ("start", "s"),
     ("left", "l2"),
@@ -79,7 +80,6 @@ for in_text, out_text in [
     ctx2.add_human_utterance(in_text)
     ctx1 = actor(ctx1)
     ctx1.clean(hold_last_n_indexes=4, field_names=["labels"])
-    stats.save(ctx1)
     ctx2 = actor(ctx2)
     ctx2.clean(hold_last_n_indexes=4, field_names=["labels"])
-    stats.save(ctx2)
+    stats.save()

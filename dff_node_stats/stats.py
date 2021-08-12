@@ -1,47 +1,54 @@
 # %%
 
 import pathlib
+import datetime
+
 
 import pandas as pd
 from pydantic import validate_arguments, BaseModel
-from dff import Context
+from dff import Context, Actor
 
 
 class Stats(BaseModel):
     csv_file: pathlib.Path
+    dfs: list = []
 
     @validate_arguments
-    def save(self, ctx: Context, *args, **kwargs):
-        if not self.csv_file.exists():
-            pd.DataFrame({"history_id": [], "context_id": [], "flow_label": [], "node_label": []}).to_csv(
-                self.csv_file,
-                index=False,
+    def update_actor(self, actor: Actor, auto_save: bool = True, *args, **kwargs):
+
+        actor.pre_handlers += [self.get_start_time]
+        actor.post_handlers += [self.collect_stats]
+        if auto_save:
+            actor.post_handlers += [self.save]
+
+    @validate_arguments
+    def get_start_time(self, ctx: Context, actor: Actor, *args, **kwargs):
+        self.start_time = datetime.datetime.now()
+
+    @validate_arguments
+    def collect_stats(self, ctx: Context, actor: Actor, *args, **kwargs):
+        history = [(-1, actor.fallback_node_label)] + list(ctx.node_label_history.items())
+        indexes, flow_labels, node_labels = list(zip(*[(index, flow, node) for index, (flow, node) in history]))
+        self.dfs += [
+            pd.DataFrame(
+                {
+                    "history_id": indexes,
+                    "context_id": str(ctx.id),
+                    "flow_label": flow_labels,
+                    "node_label": node_labels,
+                    "start_time": self.start_time,
+                    "duration_time": datetime.datetime.now() - self.start_time,
+                },
             )
-        df = pd.read_csv(self.csv_file)
-        df.history_id = df.history_id.astype(int)
-        indexes, flow_labels, node_labels = list(
-            zip(
-                *[
-                    (
-                        index,
-                        flow_label,
-                        node_label,
-                    )
-                    for index, (flow_label, node_label) in ctx.node_label_history.items()
-                ]
-            )
-        )
-        ctx_df = pd.DataFrame(
-            {
-                "history_id": indexes,
-                "context_id": [str(ctx.id)] * len(indexes),
-                "flow_label": flow_labels,
-                "node_label": node_labels,
-            },
-        )
-        history_ids = df.history_id[df.context_id == str(ctx.id)]
-        ctx_df = ctx_df[~ctx_df.history_id.isin(history_ids)]
-        pd.concat([df, ctx_df]).to_csv(self.csv_file, index=False)
+        ]
+
+    def save(self, *args, **kwargs):
+        saved_df = pd.read_csv(self.csv_file) if self.csv_file.exists() else pd.DataFrame({"history_id": []})
+        saved_df.history_id = saved_df.history_id.astype(int)
+        dfs_history_ids = [saved_df.history_id[saved_df.context_id.isin(df.context_id)] for df in self.dfs]
+        dfs = [df[~df.history_id.isin(history_ids)] for history_ids, df in zip(dfs_history_ids, self.dfs)]
+        pd.concat([saved_df, dfs]).to_csv(self.csv_file, index=False)
+        self.dfs.clean()
 
     @property
     def dataframe(self):
@@ -67,12 +74,45 @@ class Stats(BaseModel):
 
     def streamlit_run(self):
         import streamlit as st
+        import graphviz
 
         st.title("Node Analytics")
+        graph = graphviz.Digraph()
+
+        with graph.subgraph(name="cluster_0") as sub_graph:
+            sub_graph.attr(style="filled", color="lightgrey")
+            sub_graph.node_attr.update(style="filled", color="white")
+            sub_graph.edges([("a0", "a1"), ("a1", "a2"), ("a2", "a3")])
+            sub_graph.node("start1")
+            sub_graph.edge("run", "intr")
+            sub_graph.attr(label="process #1")
+
+        graph.edge("start", "a0")
+        graph.edge("start", "b0")
+
+        graph.node("start", shape="Mdiamond")
+        graph.node("end", shape="Msquare")
+
+        st.graphviz_chart(graph)
+
         st.dataframe(self.dataframe[["flow_label", "node_label"]])
         # st.subheader('Node labels')
         st.bar_chart(self.dataframe["node_label"].value_counts())
-        st.bar_chart(self.dataframe["node_label"])
+        st.bar_chart(self.dataframe[["node_label"]])
+        df = self.dataframe
+        df["node_label1"] = df["node_label"]
+        st.vega_lite_chart(
+            df[["node_label", "node_label1"]],
+            {
+                "mark": {"type": "circle", "tooltip": True},
+                "encoding": {
+                    "x": {"field": "a", "type": "quantitative"},
+                    "y": {"field": "b", "type": "quantitative"},
+                    "size": {"field": "c", "type": "quantitative"},
+                    "color": {"field": "c", "type": "quantitative"},
+                },
+            },
+        )
         # st.dataframe(self.dataframe)
 
     def api_run(self, port=8000):
