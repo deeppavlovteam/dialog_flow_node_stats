@@ -51,7 +51,7 @@ flows = {
 }
 
 actor = Actor(flows, start_node_label=("root", "start"), fallback_node_label=("root", "fallback"))
-stats = dff_node_stats.Stats(hdf_file="examples/stat.h5")
+stats = dff_node_stats.Stats(csv_file="examples/stat.csv")
 stats.update_actor(actor, auto_save=False)
 ctxs = {}
 for i in tqdm.tqdm(range(1000)):

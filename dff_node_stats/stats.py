@@ -11,7 +11,7 @@ from dff import Context, Actor
 
 
 class Stats(BaseModel):
-    hdf_file: pathlib.Path
+    csv_file: pathlib.Path
     start_time: Optional[datetime.datetime] = None
     dfs: list = []
 
@@ -52,13 +52,13 @@ class Stats(BaseModel):
         )
 
     def save(self, *args, **kwargs):
-        saved_df = pd.read_hdf(self.hdf_file) if self.hdf_file.exists() else pd.DataFrame()
-        pd.concat([saved_df] + self.dfs).to_hdf(self.hdf_file, "statistics")
+        saved_df = pd.read_csv(self.csv_file) if self.csv_file.exists() else pd.DataFrame()
+        pd.concat([saved_df] + self.dfs).to_csv(self.csv_file)
         self.dfs.clear()
 
     @property
     def dataframe(self):
-        return pd.read_hdf(self.hdf_file)
+        return pd.read_csv(self.csv_file)
 
     @property
     def transition_counts(self):
@@ -93,78 +93,77 @@ class Stats(BaseModel):
         import graphviz
         import datetime
 
-        df = pd.read_hdf(self.hdf_file)
+        df = pd.read_csv(self.csv_file)
         df = self.preproc_df(df)
 
         st.title("DialogFlow Framework Statistic Dashboard")
-        # start_time = df.start_time.min() - datetime.timedelta(days=1)
-        # end_time = df.start_time.max() + datetime.timedelta(days=1)
-        # start_date = st.date_input("Start date", start_time)
-        # end_date = st.date_input("End date", end_time)
-        # if start_date < end_date:
-        #     st.success("Start date: `%s`\n\nEnd date:`%s`" % (start_date, end_date))
-        # else:
-        #     st.error("Error: End date must fall after start date.")
+        start_time = df.start_time.min() - datetime.timedelta(days=1)
+        end_time = df.start_time.max() + datetime.timedelta(days=1)
+        start_date = st.date_input("Start date", start_time)
+        end_date = st.date_input("End date", end_time)
+        if start_date < end_date:
+            st.success("Start date: `%s`\n\nEnd date:`%s`" % (start_date, end_date))
+        else:
+            st.error("Error: End date must fall after start date.")
 
         node_counter = df.node.value_counts()
         edge_counter = df.edge.value_counts()
         node2code = {key: f"n{index}" for index, key in enumerate(df.node.unique())}
+
         st.title("DialogFlow Framework Statistic Dashboard")
+        st.subheader("Data Frame")
+        st.dataframe(df)
 
-        # st.title("DialogFlow Framework Statistic Dashboard")
-        # st.subheader("Data Frame")
-        # st.dataframe(df)
+        st.subheader("Graph of Transitions")
+        graph = graphviz.Digraph()
+        graph.attr(compound="true")
+        flow_labels = df.flow_label.unique()
+        for i, flow_label in enumerate(flow_labels):
+            with graph.subgraph(name=f"cluster{i}") as sub_graph:
+                sub_graph.attr(style="filled", color="lightgrey")
+                sub_graph.attr(label=flow_label)
 
-        # st.subheader("Graph of Transitions")
-        # graph = graphviz.Digraph()
-        # graph.attr(compound="true")
-        # flow_labels = df.flow_label.unique()
-        # for i, flow_label in enumerate(flow_labels):
-        #     with graph.subgraph(name=f"cluster{i}") as sub_graph:
-        #         sub_graph.attr(style="filled", color="lightgrey")
-        #         sub_graph.attr(label=flow_label)
+                sub_graph.node_attr.update(style="filled", color="white")
 
-        #         sub_graph.node_attr.update(style="filled", color="white")
+                for _, (history_id, node, node_label) in df.loc[
+                    df.flow_label == flow_label, ("history_id", "node", "node_label")
+                ].iterrows():
+                    counter = node_counter[node]
+                    label = f"{node_label} ({counter=})"
+                    if history_id == -1:
+                        sub_graph.node(node2code[node], label=label, shape="Mdiamond")
+                    else:
+                        sub_graph.node(node2code[node], label=label)
 
-        #         for _, (history_id, node, node_label) in df.loc[
-        #             df.flow_label == flow_label, ("history_id", "node", "node_label")
-        #         ].iterrows():
-        #             counter = node_counter[node]
-        #             label = f"{node_label} ({counter=})"
-        #             if history_id == -1:
-        #                 sub_graph.node(node2code[node], label=label, shape="Mdiamond")
-        #             else:
-        #                 sub_graph.node(node2code[node], label=label)
+        for (in_node, out_node), counter in edge_counter.items():
+            if isinstance(in_node, str):
+                label = f"({counter=})"
+                graph.edge(node2code[in_node], node2code[out_node], label=label)
 
-        # for (in_node, out_node), counter in edge_counter.items():
-        #     if isinstance(in_node, str):
-        #         label = f"({counter=})"
-        #         graph.edge(node2code[in_node], node2code[out_node], label=label)
+        st.graphviz_chart(graph)
 
-        # st.graphviz_chart(graph)
+        st.subheader("Node counters")
+        node_counters = {}
+        for flow_label in flow_labels:
+            node_counters[flow_label] = df.loc[df.flow_label == flow_label, "node_label"].value_counts()
+        st.bar_chart(node_counters)
 
-        # st.subheader("Node counters")
-        # node_counters = {}
-        # for flow_label in flow_labels:
-        #     node_counters[flow_label] = df.loc[df.flow_label == flow_label, "node_label"].value_counts()
-        # st.bar_chart(node_counters)
+        st.subheader("Transitions counters")
+        edge_counters = {}
+        for edge_type in df.edge_type.unique():
+            edge_counters[edge_type] = df.loc[df.edge_type == edge_type, "edge"].astype("str").value_counts()
+        st.bar_chart(edge_counters)
 
-        # st.subheader("Transitions counters")
-        # edge_counters = {}
-        # for edge_type in df.edge_type.unique():
-        #     edge_counters[edge_type] = df.loc[df.edge_type == edge_type, "edge"].astype("str").value_counts()
-        # st.bar_chart(edge_counters)
+        st.subheader("Transitions duration [sec]")
+        edge_time = df[["edge", "edge_type", "duration_time"]]
+        edge_time = edge_time.astype({"edge": "str"})
+        edge_time = edge_time.groupby(["edge", "edge_type"], as_index=False).mean()
+        edge_time.index = edge_time.edge
 
-        # st.subheader("Transitions duration [sec]")
-        # edge_time = df[["edge", "edge_type", "duration_time"]]
-        # edge_time = edge_time.astype({"edge": "str"})
-        # edge_time = edge_time.groupby(["edge", "edge_type"], as_index=False).mean()
-        # edge_time.index = edge_time.edge
-
-        # edge_duration = {}
-        # for edge_type in df.edge_type.unique():
-        #     edge_duration[edge_type] = edge_time.loc[edge_time.edge_type == edge_type, "duration_time"]
-        # st.bar_chart(edge_duration)
+        edge_duration = {}
+        for edge_type in df.edge_type.unique():
+            edge_duration[edge_type] = edge_time.loc[edge_time.edge_type == edge_type, "duration_time"]
+        st.bar_chart(edge_duration)
 
     def api_run(self, port=8000):
         import uvicorn
