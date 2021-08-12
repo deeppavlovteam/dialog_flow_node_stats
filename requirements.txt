@@ -1,1 +1,2 @@
 git+https://github.com/deepmipt/dialog_flow_framework.git@dev
+pandas==1.3.1
