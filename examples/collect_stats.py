@@ -79,7 +79,5 @@ for in_text, out_text in [
     ctx1.add_human_utterance(in_text)
     ctx2.add_human_utterance(in_text)
     ctx1 = actor(ctx1)
-    ctx1.clean(hold_last_n_indexes=4, field_names=["labels"])
     ctx2 = actor(ctx2)
-    ctx2.clean(hold_last_n_indexes=4, field_names=["labels"])
     stats.save()
