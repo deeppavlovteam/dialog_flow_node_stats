@@ -97,8 +97,8 @@ class Stats(BaseModel):
         df = self.preproc_df(df)
 
         st.title("DialogFlow Framework Statistic Dashboard")
-        start_time = df.start_time.min() - datetime.timedelta(days=1)
-        end_time = df.start_time.max() + datetime.timedelta(days=1)
+        start_time = pd.to_datetime(df.start_time.min()) - datetime.timedelta(days=1)
+        end_time = pd.to_datetime(df.start_time.max()) + datetime.timedelta(days=1)
         start_date = st.date_input("Start date", start_time)
         end_date = st.date_input("End date", end_time)
         if start_date < end_date:
