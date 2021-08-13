@@ -1,5 +1,6 @@
 import uuid
 import random
+import pathlib
 
 import tqdm
 
@@ -8,6 +9,9 @@ from dff import Context, Actor
 
 import dff_node_stats
 
+stats_file = pathlib.Path("examples/stats.csv")
+if stats_file.exists():
+    stats_file.unlink()
 
 # a dialog script
 flows = {
@@ -51,7 +55,8 @@ flows = {
 }
 
 actor = Actor(flows, start_node_label=("root", "start"), fallback_node_label=("root", "fallback"))
-stats = dff_node_stats.Stats(csv_file="examples/stat.csv")
+
+stats = dff_node_stats.Stats(csv_file=stats_file)
 stats.update_actor(actor, auto_save=False)
 ctxs = {}
 for i in tqdm.tqdm(range(1000)):

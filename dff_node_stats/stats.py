@@ -241,25 +241,3 @@ class Stats(BaseModel):
         # st.bar_chart(self.dataframe["node_label"].value_counts())
         # st.bar_chart(self.dataframe["node_label"])
         # # st.dataframe(self.dataframe)
-
-
-# %%
-import pandas as pd
-import numpy as np
-
-s = pd.DataFrame({"q1": ["1", "2", "2", "2", "3"], "q2": ["1", "2", "3", "3", "3"]})
-# list(s.items())
-# # .value_counts()/ len(s)
-# # for i in s.iterrows():
-# # # s.loc[:, "1"].shift(1).combine(s.loc[:, "2"], lambda *x: np.isnan(np.array(x)))
-# # # %%
-
-# %%
-dict(s.q1)
-# # %%
-
-# %%
-s.groupby("q1").count()
-# %%
-s.value_counts().reset_index()
-# %%
