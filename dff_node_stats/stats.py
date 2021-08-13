@@ -14,6 +14,13 @@ class Stats(BaseModel):
     csv_file: pathlib.Path
     start_time: Optional[datetime.datetime] = None
     dfs: list = []
+    column_dtypes: dict = {
+        "context_id": "str",
+        "flow_label": "str",
+        "node_label": "str",
+        "history_id": "int64",
+        "duration_time": "float64",
+    }
 
     @validate_arguments
     def update_actor(self, actor: Actor, auto_save: bool = True, *args, **kwargs):
@@ -52,13 +59,18 @@ class Stats(BaseModel):
         )
 
     def save(self, *args, **kwargs):
-        saved_df = pd.read_csv(self.csv_file) if self.csv_file.exists() else pd.DataFrame()
-        pd.concat([saved_df] + self.dfs).to_csv(self.csv_file)
+        saved_df = (
+            pd.read_csv(self.csv_file, dtype=self.column_dtypes, parse_dates=["start_time"])
+            if self.csv_file.exists()
+            else pd.DataFrame()
+        )
+        pd.concat([saved_df] + self.dfs).to_csv(self.csv_file, index=False)
+
         self.dfs.clear()
 
     @property
     def dataframe(self):
-        return pd.read_csv(self.csv_file)
+        return pd.read_csv(self.csv_file, dtype=self.column_dtypes, parse_dates=["start_time"])
 
     @property
     def transition_counts(self):
@@ -93,26 +105,58 @@ class Stats(BaseModel):
         import graphviz
         import datetime
 
-        df = pd.read_csv(self.csv_file)
-        df = self.preproc_df(df)
+        @st.cache(allow_output_mutation=True)
+        def read_data():
+            df = pd.read_csv(self.csv_file, dtype=self.column_dtypes, parse_dates=["start_time"])
+            df = self.preproc_df(df)
+            return df
 
-        st.title("DialogFlow Framework Statistic Dashboard")
-        start_time = pd.to_datetime(df.start_time.min()) - datetime.timedelta(days=1)
-        end_time = pd.to_datetime(df.start_time.max()) + datetime.timedelta(days=1)
-        start_date = st.date_input("Start date", start_time)
-        end_date = st.date_input("End date", end_time)
-        if start_date < end_date:
-            st.success("Start date: `%s`\n\nEnd date:`%s`" % (start_date, end_date))
-        else:
-            st.error("Error: End date must fall after start date.")
+        df_origin = read_data()
 
+        @st.cache()
+        def get_datatimes():
+            start_time = pd.to_datetime(df_origin.start_time.min()) - datetime.timedelta(days=1)
+            end_time = pd.to_datetime(df_origin.start_time.max()) + datetime.timedelta(days=1)
+            return start_time, end_time
+
+        start_time_border, end_time_border = get_datatimes()
+
+        def get_sidebar_chnges():
+            start_date = pd.to_datetime(st.sidebar.date_input("Start date", start_time_border))
+            end_date = pd.to_datetime(st.sidebar.date_input("End date", end_time_border))
+            if start_date < end_date:
+                st.sidebar.success("Start date: `%s`\n\nEnd date:`%s`" % (start_date, end_date))
+            else:
+                st.sidebar.error("Error: End date must fall after start date.")
+
+            context_id = st.sidebar.selectbox(
+                "Choose context_id",
+                options=["all"] + df_origin.context_id.to_list(),
+            )
+            return start_date, end_date, context_id
+
+        start_date, end_date, context_id = get_sidebar_chnges()
+
+        @st.cache()
+        def slice_df_origin(start_date, end_date, context_id):
+            return df_origin[
+                (df_origin.start_time >= start_date)
+                & (df_origin.start_time <= end_date)
+                & ((df_origin.context_id == context_id) | (context_id == "all"))
+            ]
+
+        df = slice_df_origin(start_date, end_date, context_id)
         node_counter = df.node.value_counts()
         edge_counter = df.edge.value_counts()
         node2code = {key: f"n{index}" for index, key in enumerate(df.node.unique())}
 
         st.title("DialogFlow Framework Statistic Dashboard")
-        st.subheader("Data Frame")
-        st.dataframe(df)
+        col1, col2 = st.beta_columns(2)
+        col1.subheader("Data")
+        col1.dataframe(df)
+        col2.subheader("Timings")
+        col2.dataframe(df.describe().duration_time)
+        col2.write(f"Data shape {df.shape}")
 
         st.subheader("Graph of Transitions")
         graph = graphviz.Digraph()
@@ -141,6 +185,16 @@ class Stats(BaseModel):
                 graph.edge(node2code[in_node], node2code[out_node], label=label)
 
         st.graphviz_chart(graph)
+
+        st.subheader("Transition Trace")
+        df_trace = df[["history_id", "flow_label", "node"]]
+        df_trace.index = df_trace.history_id
+        df_trace = df_trace.drop(columns=["history_id"])
+        df_trace
+        node_trace = {}
+        for flow_label in df_trace.flow_label.unique():
+            node_trace[flow_label] = df_trace.loc[df_trace.flow_label == flow_label, "node"]
+        st.bar_chart(df_trace.loc[:, "node"])
 
         st.subheader("Node counters")
         node_counters = {}
@@ -190,8 +244,8 @@ class Stats(BaseModel):
 
 
 # %%
-# import pandas as pd
-# import numpy as np
+import pandas as pd
+import numpy as np
 
 s = pd.DataFrame({"q1": ["1", "2", "2", "2", "3"], "q2": ["1", "2", "3", "3", "3"]})
 # list(s.items())
