@@ -5,9 +5,8 @@ import datetime
 
 
 import pandas as pd
-import numpy as np
 from pydantic import validate_arguments, BaseModel
-from dff import Context, Actor
+from dff.core import Context, Actor
 
 
 class Stats(BaseModel):
@@ -54,8 +53,8 @@ class Stats(BaseModel):
     def collect_stats(self, ctx: Context, actor: Actor, *args, **kwargs):
         self.add_df(
             ctx.id,
-            ctx.current_history_index,
-            *ctx.node_label_history[ctx.current_history_index],
+            ctx.current_index,
+            *ctx.node_labels[ctx.current_index],
         )
 
     def save(self, *args, **kwargs):

@@ -4,8 +4,9 @@ import pathlib
 
 import tqdm
 
-from dff import GRAPH, RESPONSE, TRANSITIONS
-from dff import Context, Actor
+from dff.core.keywords import GRAPH, RESPONSE, TRANSITIONS
+from dff.core import Context, Actor
+import dff.conditions as cnd
 
 import dff_node_stats
 
@@ -13,6 +14,21 @@ stats_file = pathlib.Path("examples/stats.csv")
 if stats_file.exists():
     stats_file.unlink()
 
+transitions = {
+    "root": {
+        "start": [
+            "hi",
+            "i like animals",
+            "let's talk about animals",
+        ]
+    },
+    "animals": {
+        "have_pets": ["yes"],
+        "like_animals": ["yes"],
+        "what_animal": ["bird", "dog"],
+        "ask_about_breed": ["pereat", "bulldog", "i do not known"],
+    },
+}
 # a dialog script
 flows = {
     "root": {
@@ -20,9 +36,9 @@ flows = {
             "start": {
                 RESPONSE: "Hi",
                 TRANSITIONS: {
-                    ("animals", "ask_some_questions"): "hi",
-                    ("animals", "have_pets"): "i like animals",
-                    ("animals", "like_animals"): "let's talk about animals",
+                    ("animals", "ask_some_questions"): cnd.exact_match("hi"),
+                    ("animals", "have_pets"): cnd.exact_match("i like animals"),
+                    ("animals", "like_animals"): cnd.exact_match("let's talk about animals"),
                 },
             },
             "fallback": {RESPONSE: "Oops"},
@@ -31,19 +47,22 @@ flows = {
     "animals": {
         GRAPH: {
             "ask_some_questions": {RESPONSE: "how are you"},
-            "have_pets": {RESPONSE: "do you have pets?", TRANSITIONS: {"what_animal": "yes"}},
-            "like_animals": {RESPONSE: "do you like it?", TRANSITIONS: {"what_animal": "yes "}},
+            "have_pets": {RESPONSE: "do you have pets?", TRANSITIONS: {"what_animal": cnd.exact_match("yes")}},
+            "like_animals": {RESPONSE: "do you like it?", TRANSITIONS: {"what_animal": cnd.exact_match("yes")}},
             "what_animal": {
                 RESPONSE: "what animals do you have?",
-                TRANSITIONS: {"ask_about_color": "bird", "ask_about_breed": "dog"},
+                TRANSITIONS: {
+                    "ask_about_color": cnd.exact_match("bird"),
+                    "ask_about_breed": cnd.exact_match("dog"),
+                },
             },
             "ask_about_color": {RESPONSE: "what color is it"},
             "ask_about_breed": {
                 RESPONSE: "what is this breed?",
                 TRANSITIONS: {
-                    "ask_about_breed": "pereat",
-                    "tell_fact_about_breed": "bulldog",
-                    "ask_about_training": "i do not known",
+                    "ask_about_breed": cnd.exact_match("pereat"),
+                    "tell_fact_about_breed": cnd.exact_match("bulldog"),
+                    "ask_about_training": cnd.exact_match("i do not known"),
                 },
             },
             "tell_fact_about_breed": {
@@ -62,13 +81,13 @@ ctxs = {}
 for i in tqdm.tqdm(range(1000)):
     for j in range(4):
         ctx = ctxs.get(j, Context(id=uuid.uuid4()))
-        flow, node = ctx.node_label_history.get(ctx.previous_history_index, ["root", "fallback"])
+        flow, node = ctx.node_labels.get(ctx.previous_index, ["root", "fallback"])
         if [flow, node] == ["root", "fallback"]:
             ctx = Context()
             flow, node = ["root", "start"]
-        answers = list(flows[flow][GRAPH][node].get(TRANSITIONS, {}).values())
+        answers = list(transitions.get(flow, {}).get(node, []))
         in_text = random.choice(answers) if answers else "go to fallback"
-        ctx.add_human_utterance(in_text)
+        ctx.add_request(in_text)
         ctx = actor(ctx)
         ctx.clear(hold_last_n_indexes=3)
         ctxs[j] = ctx
