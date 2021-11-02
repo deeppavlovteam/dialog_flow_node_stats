@@ -159,7 +159,7 @@ class Stats(BaseModel):
         node2code = {key: f"n{index}" for index, key in enumerate(df.node.unique())}
 
         st.title("DialogFlow Framework Statistic Dashboard")
-        col1, col2 = st.beta_columns(2)
+        col1, col2 = st.columns(2)
         col1.subheader("Data")
         col1.dataframe(df)
         col2.subheader("Timings")

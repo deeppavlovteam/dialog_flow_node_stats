@@ -30,9 +30,9 @@ transitions = {
     },
     "news": {
         "what_news": ["science", "sport"],
-        "ask_about_science": [cnd.exact_match("yes"), "let's change the topic"],
+        "ask_about_science": ["yes", "let's change the topic"],
         "science_news": ["ok", "let's change the topic"],
-        "ask_about_sport": [cnd.exact_match("yes"), "let's change the topic"],
+        "ask_about_sport": ["yes", "let's change the topic"],
         "sport_news": ["ok", "let's change the topic"],
     },
     "small_talk": {

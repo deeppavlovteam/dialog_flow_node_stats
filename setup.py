@@ -4,28 +4,12 @@ import setuptools
 
 LOCATION = pathlib.Path(__file__).parent.resolve()
 
-
-def read_requirements():
-    """parses requirements from requirements.txt"""
-    reqs_file = LOCATION / "requirements.txt"
-    reqs = [line.strip() for line in reqs_file.open(encoding="utf8").readlines() if not line.strip().startswith("#")]
-
-    names = []
-    links = []
-    for req in reqs:
-        if "://" in req:
-            links.append(req)
-        else:
-            names.append(req)
-    return {"install_requires": names, "dependency_links": links}
-
-
 readme_file = LOCATION / "README.md"
 long_description = readme_file.open(encoding="utf8").read()
 
 setuptools.setup(
     name="dff_node_stats",
-    version="0.1.a1",
+    version="0.1.a2",
     scripts=[],
     author="Denis Kuznetsov",
     author_email="kuznetsov.den.p@gmail.com",
@@ -33,19 +17,17 @@ setuptools.setup(
     "(https://github.com/deepmipt/dialog_flow_framework).",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="",
-    packages=setuptools.find_packages(),
+    url="https://github.com/kudep/dff-node-stats",
+    packages=setuptools.find_packages(where="."),
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
     ],
-    package_data={},
-    include_package_data=True,
     extras_require={
         "api": ["fastapi>=0.68.0", "uvicorn>=0.14.0"],
-        "dashboard": ["streamlit>=0.85.1", "graphviz>=0.17"],
-        "all": ["fastapi>=0.68.0", "uvicorn>=0.14.0", "streamlit>=0.85.1", "graphviz==0.17"],
+        "dashboard": ["streamlit>=1.1.0", "graphviz>=0.17"],
+        "all": ["fastapi>=0.68.0", "uvicorn>=0.14.0", "streamlit>=1.1.0", "graphviz==0.17"],
     },
-    **read_requirements()
+    install_requires=["pandas>=1.3.1", "dff>=0.1a5"],
 )

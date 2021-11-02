@@ -7,10 +7,10 @@ Installation:
 # install dialog flow framework
 pip install dff
 # Install dff_node_stats
-pip install dff_node_stats #basic
-# pip install dff_node_stats[api] # version with rest-api, that provides access to stats by http requests
-# pip install dff_node_stats[dashboard] # version with dashboard, that provides access to stats by web-UI
-# pip install dff_node_stats[all] # version with both
+pip install dff-node-stats #basic
+# pip install dff-node-stats[api] # version with rest-api, that provides access to stats by http requests
+# pip install dff-node-stats[dashboard] # version with dashboard, that provides access to stats by web-UI
+# pip install dff-node-stats[all] # version with both
 ```
 # Code snippets
 
