@@ -7,6 +7,7 @@ import datetime
 import pandas as pd
 from pydantic import validate_arguments, BaseModel
 from dff.core import Context, Actor
+from dff.core.types import ActorStage
 
 
 class Stats(BaseModel):
@@ -22,18 +23,24 @@ class Stats(BaseModel):
     }
 
     @validate_arguments
-    def update_actor(self, actor: Actor, auto_save: bool = True, *args, **kwargs):
+    def _update_handlers(self, actor: Actor, stage: ActorStage, handler) -> Actor:
+        actor.handlers[stage] = actor.handlers.get(stage, []) + [handler]
+        return actor
 
-        actor.pre_handlers += [self.get_start_time]
-        actor.post_handlers += [self.collect_stats]
+    def update_actor_handlers(self, actor: Actor, auto_save: bool = True, *args, **kwargs):
+        self._update_handlers(actor, ActorStage.CONTEXT_INIT, self.get_start_time)
+        self._update_handlers(actor, ActorStage.FINISH_TURN, self.collect_stats)
         if auto_save:
-            actor.post_handlers += [self.save]
+            self._update_handlers(actor, ActorStage.FINISH_TURN, self.save)
 
     @validate_arguments
     def get_start_time(self, ctx: Context, actor: Actor, *args, **kwargs):
         self.start_time = datetime.datetime.now()
-        if ctx.previous_node_label is None:
-            self.add_df(ctx.id, -1, *actor.start_node_label[:2])
+        if len(ctx.labels) >= 2:
+            label = list(actor.labels.values())[-2]
+        else:
+            label = actor.start_label[:2]
+        self.add_df(ctx.id, -1, *label[:2])
 
     def add_df(self, context_id, history_id, flow_label, node_label):
         self.dfs += [
@@ -51,10 +58,12 @@ class Stats(BaseModel):
 
     @validate_arguments
     def collect_stats(self, ctx: Context, actor: Actor, *args, **kwargs):
+        indexes = list(ctx.labels)
+        current_index = indexes[-1] if indexes else -1
         self.add_df(
             ctx.id,
-            ctx.current_index,
-            *ctx.node_labels[ctx.current_index],
+            current_index,
+            *ctx.last_label,
         )
 
     def save(self, *args, **kwargs):

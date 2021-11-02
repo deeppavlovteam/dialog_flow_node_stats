@@ -25,3 +25,23 @@ streamlit run examples/2.run_dashboard_for_stats.py
 # and run api and follow to swagger by http://localhost:8000/docs
 python examples/2.get_stats_by_api.py
 ```
+
+Using:
+```python
+# import
+import dff_node_stats
+# ....
+# Define a plot
+# Define an actor
+# ....
+
+# Define file for stats saving
+stats = dff_node_stats.Stats(csv_file=stats_file)
+# Add handlers to actor
+stats.update_actor_handlers(actor, auto_save=False)
+
+# ....
+# Handle user request
+# ....
+
+```
