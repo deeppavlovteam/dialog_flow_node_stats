@@ -1,2 +1,2 @@
-streamlit==0.85.1
-graphviz==0.17
+streamlit>=0.85.1
+graphviz>=0.17
