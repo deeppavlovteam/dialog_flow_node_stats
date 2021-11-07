@@ -4,7 +4,7 @@ import pathlib
 
 import tqdm
 
-from dff.core.keywords import GRAPH, RESPONSE, TRANSITIONS
+from dff.core.keywords import RESPONSE, TRANSITIONS
 from dff.core import Context, Actor
 import dff.conditions as cnd
 
@@ -32,40 +32,40 @@ transitions = {
 # a dialog script
 flows = {
     "root": {
-            "start": {
-                RESPONSE: "Hi",
-                TRANSITIONS: {
-                    ("animals", "ask_some_questions"): cnd.exact_match("hi"),
-                    ("animals", "have_pets"): cnd.exact_match("i like animals"),
-                    ("animals", "like_animals"): cnd.exact_match("let's talk about animals"),
-                },
+        "start": {
+            RESPONSE: "Hi",
+            TRANSITIONS: {
+                ("animals", "ask_some_questions"): cnd.exact_match("hi"),
+                ("animals", "have_pets"): cnd.exact_match("i like animals"),
+                ("animals", "like_animals"): cnd.exact_match("let's talk about animals"),
             },
-            "fallback": {RESPONSE: "Oops"},
+        },
+        "fallback": {RESPONSE: "Oops"},
     },
     "animals": {
-            "ask_some_questions": {RESPONSE: "how are you"},
-            "have_pets": {RESPONSE: "do you have pets?", TRANSITIONS: {"what_animal": cnd.exact_match("yes")}},
-            "like_animals": {RESPONSE: "do you like it?", TRANSITIONS: {"what_animal": cnd.exact_match("yes")}},
-            "what_animal": {
-                RESPONSE: "what animals do you have?",
-                TRANSITIONS: {
-                    "ask_about_color": cnd.exact_match("bird"),
-                    "ask_about_breed": cnd.exact_match("dog"),
-                },
+        "ask_some_questions": {RESPONSE: "how are you"},
+        "have_pets": {RESPONSE: "do you have pets?", TRANSITIONS: {"what_animal": cnd.exact_match("yes")}},
+        "like_animals": {RESPONSE: "do you like it?", TRANSITIONS: {"what_animal": cnd.exact_match("yes")}},
+        "what_animal": {
+            RESPONSE: "what animals do you have?",
+            TRANSITIONS: {
+                "ask_about_color": cnd.exact_match("bird"),
+                "ask_about_breed": cnd.exact_match("dog"),
             },
-            "ask_about_color": {RESPONSE: "what color is it"},
-            "ask_about_breed": {
-                RESPONSE: "what is this breed?",
-                TRANSITIONS: {
-                    "ask_about_breed": cnd.exact_match("pereat"),
-                    "tell_fact_about_breed": cnd.exact_match("bulldog"),
-                    "ask_about_training": cnd.exact_match("i do not known"),
-                },
+        },
+        "ask_about_color": {RESPONSE: "what color is it"},
+        "ask_about_breed": {
+            RESPONSE: "what is this breed?",
+            TRANSITIONS: {
+                "ask_about_breed": cnd.exact_match("pereat"),
+                "tell_fact_about_breed": cnd.exact_match("bulldog"),
+                "ask_about_training": cnd.exact_match("i do not known"),
             },
-            "tell_fact_about_breed": {
-                RESPONSE: "Bulldogs appeared in England as specialized bull-baiting dogs. ",
-            },
-            "ask_about_training": {RESPONSE: "Do you train your dog? "},
+        },
+        "tell_fact_about_breed": {
+            RESPONSE: "Bulldogs appeared in England as specialized bull-baiting dogs. ",
+        },
+        "ask_about_training": {RESPONSE: "Do you train your dog? "},
     },
 }
 
