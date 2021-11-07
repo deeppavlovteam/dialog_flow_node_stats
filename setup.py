@@ -9,7 +9,7 @@ long_description = readme_file.open(encoding="utf8").read()
 
 setuptools.setup(
     name="dff_node_stats",
-    version="0.1.a2",
+    version="0.1.a3",
     scripts=[],
     author="Denis Kuznetsov",
     author_email="kuznetsov.den.p@gmail.com",
@@ -26,7 +26,7 @@ setuptools.setup(
     ],
     extras_require={
         "api": ["fastapi>=0.68.0", "uvicorn>=0.14.0"],
-        "dashboard": ["streamlit>=1.1.0", "graphviz>=0.17"],
+        "dashboard": ["streamlit>=1.1.0", "graphviz==0.17"],
         "all": ["fastapi>=0.68.0", "uvicorn>=0.14.0", "streamlit>=1.1.0", "graphviz==0.17"],
     },
     install_requires=["pandas>=1.3.1", "dff>=0.1a5"],
