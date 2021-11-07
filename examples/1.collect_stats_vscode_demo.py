@@ -32,7 +32,6 @@ transitions = {
 # a dialog script
 flows = {
     "root": {
-        GRAPH: {
             "start": {
                 RESPONSE: "Hi",
                 TRANSITIONS: {
@@ -42,10 +41,8 @@ flows = {
                 },
             },
             "fallback": {RESPONSE: "Oops"},
-        },
     },
     "animals": {
-        GRAPH: {
             "ask_some_questions": {RESPONSE: "how are you"},
             "have_pets": {RESPONSE: "do you have pets?", TRANSITIONS: {"what_animal": cnd.exact_match("yes")}},
             "like_animals": {RESPONSE: "do you like it?", TRANSITIONS: {"what_animal": cnd.exact_match("yes")}},
@@ -69,19 +66,19 @@ flows = {
                 RESPONSE: "Bulldogs appeared in England as specialized bull-baiting dogs. ",
             },
             "ask_about_training": {RESPONSE: "Do you train your dog? "},
-        },
     },
 }
 
 actor = Actor(flows, start_node_label=("root", "start"), fallback_node_label=("root", "fallback"))
 
 stats = dff_node_stats.Stats(csv_file=stats_file)
-stats.update_actor(actor, auto_save=False)
+stats.update_actor_handlers(actor, auto_save=False)
 ctxs = {}
 for i in tqdm.tqdm(range(1000)):
     for j in range(4):
         ctx = ctxs.get(j, Context(id=uuid.uuid4()))
-        flow, node = ctx.node_labels.get(ctx.previous_index, ["root", "fallback"])
+        label = ctx.last_label if ctx.last_label else actor.fallback_label
+        flow, node = label[:2]
         if [flow, node] == ["root", "fallback"]:
             ctx = Context()
             flow, node = ["root", "start"]

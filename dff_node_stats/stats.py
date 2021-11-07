@@ -36,10 +36,8 @@ class Stats(BaseModel):
     @validate_arguments
     def get_start_time(self, ctx: Context, actor: Actor, *args, **kwargs):
         self.start_time = datetime.datetime.now()
-        if len(ctx.labels) >= 2:
-            label = list(actor.labels.values())[-2]
-        else:
-            label = actor.start_label[:2]
+        label = ctx.last_label if ctx.last_label else actor.start_label
+
         self.add_df(ctx.id, -1, *label[:2])
 
     def add_df(self, context_id, history_id, flow_label, node_label):
@@ -63,7 +61,7 @@ class Stats(BaseModel):
         self.add_df(
             ctx.id,
             current_index,
-            *ctx.last_label,
+            *ctx.last_label[:2],
         )
 
     def save(self, *args, **kwargs):
