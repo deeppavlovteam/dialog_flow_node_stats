@@ -69,7 +69,7 @@ flows = {
     },
 }
 
-actor = Actor(flows, start_node_label=("root", "start"), fallback_node_label=("root", "fallback"))
+actor = Actor(flows, start_label=("root", "start"), fallback_label=("root", "fallback"))
 
 stats = dff_node_stats.Stats(csv_file=stats_file)
 stats.update_actor_handlers(actor, auto_save=False)

@@ -36,9 +36,8 @@ class Stats(BaseModel):
     @validate_arguments
     def get_start_time(self, ctx: Context, actor: Actor, *args, **kwargs):
         self.start_time = datetime.datetime.now()
-        label = ctx.last_label if ctx.last_label else actor.start_label
-
-        self.add_df(ctx.id, -1, *label[:2])
+        if ctx.last_label is None:
+            self.add_df(ctx.id, -1, *actor.start_label[:2])
 
     def add_df(self, context_id, history_id, flow_label, node_label):
         self.dfs += [
@@ -137,7 +136,7 @@ class Stats(BaseModel):
 
             context_id = st.sidebar.selectbox(
                 "Choose context_id",
-                options=["all"] + df_origin.context_id.to_list(),
+                options=["all"] + df_origin.context_id.unique().tolist(),
             )
             return start_date, end_date, context_id
 
@@ -187,7 +186,7 @@ class Stats(BaseModel):
 
         for (in_node, out_node), counter in edge_counter.items():
             if isinstance(in_node, str):
-                label = f"({counter=})"
+                label = f"(probs={counter/node_counter[in_node]:.2f})"
                 graph.edge(node2code[in_node], node2code[out_node], label=label)
 
         st.graphviz_chart(graph)
