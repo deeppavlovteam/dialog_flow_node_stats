@@ -4,15 +4,13 @@ import pathlib
 
 import tqdm
 
-from dff.core.keywords import RESPONSE, TRANSITIONS
-from dff.core import Context, Actor
-import dff.conditions as cnd
+from df_engine.core.keywords import RESPONSE, TRANSITIONS
+from df_engine.core import Context, Actor
+import df_engine.conditions as cnd
 
 import dff_node_stats
+from dff_node_stats import collectors as DSC
 
-stats_file = pathlib.Path("examples/stats.csv")
-if stats_file.exists():
-    stats_file.unlink()
 
 transitions = {
     "root": {
@@ -69,24 +67,37 @@ flows = {
     },
 }
 
-actor = Actor(flows, start_label=("root", "start"), fallback_label=("root", "fallback"))
 
-stats = dff_node_stats.Stats(csv_file=stats_file)
-stats.update_actor_handlers(actor, auto_save=False)
-ctxs = {}
-for i in tqdm.tqdm(range(1000)):
-    for j in range(4):
-        ctx = ctxs.get(j, Context(id=uuid.uuid4()))
-        label = ctx.last_label if ctx.last_label else actor.fallback_label
-        flow, node = label[:2]
-        if [flow, node] == ["root", "fallback"]:
-            ctx = Context()
-            flow, node = ["root", "start"]
-        answers = list(transitions.get(flow, {}).get(node, []))
-        in_text = random.choice(answers) if answers else "go to fallback"
-        ctx.add_request(in_text)
-        ctx = actor(ctx)
-        ctx.clear(hold_last_n_indexes=3)
-        ctxs[j] = ctx
-    if i % 50 == 0:
-        stats.save()
+def main(stats_object: dff_node_stats.Stats, n_iterations: int = 300):
+    actor = Actor(flows, start_label=("root", "start"), fallback_label=("root", "fallback"))
+
+    stats_object.update_actor_handlers(actor, auto_save=False)
+    ctxs = {}
+    for i in tqdm.tqdm(range(n_iterations)):
+        for j in range(4):
+            ctx = ctxs.get(j, Context(id=uuid.uuid4()))
+            label = ctx.last_label if ctx.last_label else actor.fallback_label
+            flow, node = label[:2]
+            if [flow, node] == ["root", "fallback"]:
+                ctx = Context()
+                flow, node = ["root", "start"]
+            answers = list(transitions.get(flow, {}).get(node, []))
+            in_text = random.choice(answers) if answers else "go to fallback"
+            ctx.add_request(in_text)
+            ctx = actor(ctx)
+            ctx.clear(hold_last_n_indices=3)
+            ctxs[j] = ctx
+    return stats_object
+
+
+if __name__ == "__main__":
+    stats_file = pathlib.Path("examples/stats.csv")
+    if stats_file.exists():
+        stats_file.unlink()    
+
+    stats = dff_node_stats.Stats(
+        saver=dff_node_stats.Saver("csv://examples/stats.csv"),
+        collectors=[DSC.NodeLabelCollector()]
+    )    
+    stats_object = main(stats)
+    stats_object.save()
